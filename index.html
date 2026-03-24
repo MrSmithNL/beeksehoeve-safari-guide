@@ -99,6 +99,56 @@
     .lang-btn:active { transform: scale(0.95); }
     .lang-flag { font-size: 20px; }
 
+    /* ---- DOWNLOAD BAR ---- */
+    .download-bar {
+      padding: 0 20px 8px;
+      background: var(--green-dark);
+      flex-shrink: 0;
+    }
+    .download-btn {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid var(--green-light);
+      border-radius: 12px;
+      background: transparent;
+      color: var(--green-pale);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .download-btn:active { transform: scale(0.98); }
+    .download-btn.downloading {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+    .download-btn.done {
+      border-color: var(--green-light);
+      background: var(--green-light);
+      color: var(--white);
+    }
+    .download-progress {
+      width: 100%;
+      height: 4px;
+      background: var(--green-dark);
+      border-radius: 2px;
+      margin-top: 6px;
+      overflow: hidden;
+      display: none;
+    }
+    .download-progress.show { display: block; }
+    .download-progress-fill {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
     /* ---- CHAPTER LIST ---- */
     .chapter-list {
       flex: 1;
@@ -195,25 +245,39 @@
     }
     .progress-bar {
       width: 100%;
-      height: 6px;
+      height: 8px;
       background: var(--green-dark);
-      border-radius: 3px;
-      overflow: hidden;
+      border-radius: 4px;
+      overflow: visible;
       position: relative;
+      cursor: pointer;
     }
     .progress-fill {
       height: 100%;
       background: var(--gold);
-      border-radius: 3px;
+      border-radius: 4px;
       width: 0%;
-      transition: width 0.3s linear;
+      transition: width 0.1s linear;
+      position: relative;
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      right: -8px;
+      top: -4px;
+      width: 16px;
+      height: 16px;
+      background: var(--gold);
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(0,0,0,0.3);
     }
     .progress-times {
       display: flex;
       justify-content: space-between;
-      font-size: 11px;
-      color: var(--text-light);
-      margin-top: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--white);
+      margin-top: 6px;
     }
 
     /* Controls */
@@ -340,6 +404,17 @@
       <button class="lang-btn" data-lang="de" onclick="setLang('de')">
         <span class="lang-flag">&#x1F1E9;&#x1F1EA;</span> DE
       </button>
+    </div>
+
+    <!-- Download for offline -->
+    <div class="download-bar">
+      <button class="download-btn" id="downloadBtn" onclick="downloadAll()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        <span id="downloadLabel">Download for offline use</span>
+      </button>
+      <div class="download-progress" id="downloadProgress">
+        <div class="download-progress-fill" id="downloadProgressFill"></div>
+      </div>
     </div>
 
     <!-- Chapter list -->

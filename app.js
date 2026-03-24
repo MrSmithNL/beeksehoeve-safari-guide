@@ -33,6 +33,9 @@ function init() {
   // Render chapters
   renderChapters();
 
+  // Check offline download status
+  checkDownloadStatus();
+
   // Hide loading screen
   setTimeout(() => {
     document.getElementById('loadingScreen').classList.add('hide');
@@ -63,6 +66,7 @@ function setLang(lang, rerender = true) {
 
   if (rerender) {
     renderChapters();
+    checkDownloadStatus();
     // Update now-playing text if something is loaded
     if (currentChapterIdx >= 0) {
       const ch = CHAPTERS[currentChapterIdx];
@@ -208,13 +212,37 @@ audio.addEventListener('loadedmetadata', () => {
   timeTotal.textContent = formatTime(audio.duration);
 });
 
-// ---- Progress bar seeking ----
-document.getElementById('progressContainer').addEventListener('click', (e) => {
+// ---- Progress bar seeking (click + drag) ----
+const progressContainer = document.getElementById('progressContainer');
+let isDragging = false;
+
+function seekFromEvent(e) {
   if (!audio.duration) return;
-  const rect = e.currentTarget.getBoundingClientRect();
-  const pct = (e.clientX - rect.left) / rect.width;
+  const rect = progressContainer.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   audio.currentTime = pct * audio.duration;
+}
+
+progressContainer.addEventListener('click', seekFromEvent);
+
+progressContainer.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  seekFromEvent(e);
 });
+document.addEventListener('mousemove', (e) => {
+  if (isDragging) seekFromEvent(e);
+});
+document.addEventListener('mouseup', () => { isDragging = false; });
+
+progressContainer.addEventListener('touchstart', (e) => {
+  isDragging = true;
+  seekFromEvent(e);
+}, { passive: true });
+document.addEventListener('touchmove', (e) => {
+  if (isDragging) seekFromEvent(e);
+}, { passive: true });
+document.addEventListener('touchend', () => { isDragging = false; });
 
 // ---- Media Session API (lock screen controls) ----
 if ('mediaSession' in navigator) {
@@ -235,6 +263,97 @@ if ('mediaSession' in navigator) {
       });
     }
   });
+}
+
+// ---- Download All for Offline ----
+let isDownloading = false;
+
+async function downloadAll() {
+  if (isDownloading) return;
+
+  const btn = document.getElementById('downloadBtn');
+  const label = document.getElementById('downloadLabel');
+  const progressBar = document.getElementById('downloadProgress');
+  const progressFill = document.getElementById('downloadProgressFill');
+
+  // Check if all files are already cached
+  const cache = await caches.open('safari-guide-v1');
+  const allFiles = CHAPTERS.map(ch => ch.audio[currentLang]);
+  let cached = 0;
+  for (const file of allFiles) {
+    const match = await cache.match(file);
+    if (match) cached++;
+  }
+
+  if (cached === allFiles.length) {
+    label.textContent = 'All chapters available offline';
+    btn.classList.add('done');
+    return;
+  }
+
+  isDownloading = true;
+  btn.classList.add('downloading');
+  progressBar.classList.add('show');
+  label.textContent = 'Downloading...';
+
+  let completed = 0;
+  for (const file of allFiles) {
+    try {
+      // Check if already cached
+      const match = await cache.match(file);
+      if (!match) {
+        const resp = await fetch(file);
+        if (resp.ok) {
+          await cache.put(file, resp);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to cache:', file, err);
+    }
+    completed++;
+    const pct = (completed / allFiles.length) * 100;
+    progressFill.style.width = pct + '%';
+    label.textContent = `Downloading... ${completed}/${allFiles.length}`;
+  }
+
+  isDownloading = false;
+  progressBar.classList.remove('show');
+  btn.classList.remove('downloading');
+  btn.classList.add('done');
+  label.textContent = 'All chapters available offline';
+}
+
+// Check download status on init and language change
+async function checkDownloadStatus() {
+  const btn = document.getElementById('downloadBtn');
+  const label = document.getElementById('downloadLabel');
+
+  if (!('caches' in window)) {
+    btn.style.display = 'none';
+    return;
+  }
+
+  try {
+    const cache = await caches.open('safari-guide-v1');
+    const allFiles = CHAPTERS.map(ch => ch.audio[currentLang]);
+    let cached = 0;
+    for (const file of allFiles) {
+      const match = await cache.match(file);
+      if (match) cached++;
+    }
+
+    btn.classList.remove('done', 'downloading');
+    if (cached === allFiles.length) {
+      btn.classList.add('done');
+      label.textContent = 'All chapters available offline';
+    } else if (cached > 0) {
+      label.textContent = `Download for offline (${cached}/${allFiles.length} cached)`;
+    } else {
+      label.textContent = 'Download for offline use';
+    }
+  } catch (e) {
+    // Ignore cache errors
+  }
 }
 
 // ---- Register Service Worker ----
