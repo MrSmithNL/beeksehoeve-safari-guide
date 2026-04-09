@@ -1,4 +1,4 @@
-const CACHE_NAME = 'safari-guide-v3';
+const CACHE_NAME = 'safari-guide-v4';
 
 // Core app files (always cached)
 const CORE_ASSETS = [
@@ -10,9 +10,6 @@ const CORE_ASSETS = [
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
-
-// Audio files — cached on first play (cache-on-demand strategy)
-// This avoids downloading all 48 audio files upfront
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -37,7 +34,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // For audio files: cache-first, then network
+  // For audio files: cache-first, then network (offline support)
   if (url.pathname.startsWith('/audio/')) {
     event.respondWith(
       caches.match(event.request).then(cached => {
@@ -56,18 +53,18 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For everything else: cache-first, fallback to network
+  // For core app files: network-first, fallback to cache (always get latest)
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      return cached || fetch(event.request).then(response => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, clone);
-          });
-        }
-        return response;
-      });
+    fetch(event.request).then(response => {
+      if (response.ok) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, clone);
+        });
+      }
+      return response;
+    }).catch(() => {
+      return caches.match(event.request);
     })
   );
 });
