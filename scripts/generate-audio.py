@@ -14,7 +14,7 @@ BASE_URL = "https://api.elevenlabs.io/v1/text-to-speech"
 
 # Voice IDs per language
 VOICES = {
-    "nl": "60CwgZt94Yf7yYIXMDDe",  # Peter - Native Dutch narrator
+    "nl": "dLPO5AsXc3FZDbTh1IKa",  # Ido - Professional Friendly Narrator (Dutch)
     "en": "onwK4e9ZLuTAKqWW03F9",  # Daniel - British broadcaster
     "de": "JiW03c2Gt43XNUQAumRP",  # Helmut - German warm narrator
 }
