@@ -194,10 +194,6 @@ audio.addEventListener('pause', () => { isPlaying = false; updatePlayIcon(); });
 audio.addEventListener('ended', () => {
   isPlaying = false;
   updatePlayIcon();
-  // Auto-advance to next chapter
-  if (currentChapterIdx < CHAPTERS.length - 1) {
-    setTimeout(() => playChapter(currentChapterIdx + 1), 1500);
-  }
 });
 
 audio.addEventListener('timeupdate', () => {
