@@ -273,7 +273,7 @@ async function downloadAll() {
   const progressFill = document.getElementById('downloadProgressFill');
 
   // Check if all files are already cached
-  const cache = await caches.open('safari-guide-v2');
+  const cache = await caches.open('safari-guide-v3');
   const allFiles = CHAPTERS.map(ch => ch.audio[currentLang]);
   let cached = 0;
   for (const file of allFiles) {
@@ -330,7 +330,7 @@ async function checkDownloadStatus() {
   }
 
   try {
-    const cache = await caches.open('safari-guide-v2');
+    const cache = await caches.open('safari-guide-v3');
     const allFiles = CHAPTERS.map(ch => ch.audio[currentLang]);
     let cached = 0;
     for (const file of allFiles) {
