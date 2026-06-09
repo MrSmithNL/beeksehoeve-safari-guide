@@ -15,7 +15,7 @@ BASE_URL = "https://api.elevenlabs.io/v1/text-to-speech"
 # Voice IDs per language
 VOICES = {
     "nl": "dLPO5AsXc3FZDbTh1IKa",  # Ido - Professional Friendly Narrator (Dutch)
-    "en": "onwK4e9ZLuTAKqWW03F9",  # Daniel - British broadcaster
+    "en": "aFyw0oiXW7dzKF4o7woX",  # Talkative Joe - Lively British RP (production voice)
     "de": "JiW03c2Gt43XNUQAumRP",  # Helmut - German warm narrator
 }
 
@@ -125,12 +125,43 @@ def generate_audio(text, voice_id, output_path):
         return 0
 
 
+def parse_args(argv):
+    """Minimal CLI: --lang nl,en,de  --chapters A,B,J  --force.
+
+    --lang     restrict to these languages (default: all three)
+    --chapters restrict to these chapter IDs (default: all)
+    --force    regenerate even if a >10KB file already exists
+    """
+    langs = ["nl", "en", "de"]
+    chapters = list(CHAPTER_IDS)
+    force = False
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--lang" and i + 1 < len(argv):
+            langs = [x.strip().lower() for x in argv[i + 1].split(",") if x.strip()]
+            i += 2
+        elif arg == "--chapters" and i + 1 < len(argv):
+            chapters = [x.strip().upper() for x in argv[i + 1].split(",") if x.strip()]
+            i += 2
+        elif arg == "--force":
+            force = True
+            i += 1
+        else:
+            print(f"  WARNING: ignoring unknown argument '{arg}'")
+            i += 1
+    return langs, chapters, force
+
+
 def main():
+    sel_langs, sel_chapters, force = parse_args(sys.argv[1:])
+
     scripts = {
         "nl": os.path.join(DOCS_DIR, "script-dutch.txt"),
         "en": os.path.join(DOCS_DIR, "script-english.txt"),
         "de": os.path.join(DOCS_DIR, "script-german.txt"),
     }
+    scripts = {lang: path for lang, path in scripts.items() if lang in sel_langs}
 
     # Parse all scripts
     all_chapters = {}
@@ -145,7 +176,7 @@ def main():
     total_files = 0
     failed = []
 
-    for lang in ["nl", "en", "de"]:
+    for lang in sel_langs:
         voice_id = VOICES[lang]
         chapters = all_chapters.get(lang, {})
         lang_dir = os.path.join(AUDIO_DIR, lang)
@@ -157,6 +188,8 @@ def main():
         print(f"{'='*60}")
 
         for cid in CHAPTER_IDS:
+            if cid not in sel_chapters:
+                continue
             if cid not in chapters:
                 print(f"  [{cid}] SKIP - no text found")
                 continue
@@ -166,8 +199,8 @@ def main():
             char_count = len(text)
             total_chars += char_count
 
-            # Skip if file already exists and is > 10KB
-            if os.path.exists(output_path) and os.path.getsize(output_path) > 10000:
+            # Skip if file already exists and is > 10KB (unless --force)
+            if not force and os.path.exists(output_path) and os.path.getsize(output_path) > 10000:
                 print(f"  [{cid}] SKIP - already exists ({os.path.getsize(output_path):,} bytes)")
                 total_files += 1
                 continue

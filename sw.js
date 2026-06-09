@@ -1,4 +1,4 @@
-const CACHE_NAME = 'safari-guide-v4';
+const CACHE_NAME = 'safari-guide-v5';
 
 // Core app files (always cached)
 const CORE_ASSETS = [

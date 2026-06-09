@@ -1,0 +1,10 @@
+# OS / editor cruft
+.DS_Store
+**/.DS_Store
+
+# Local tooling / deploy state (not part of the deployed site)
+.claude/
+.netlify/
+
+# Local audio backups (kept on disk, never deployed)
+.audio-backup-*/
